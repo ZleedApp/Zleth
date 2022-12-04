@@ -24,7 +24,7 @@ fs.readdirSync(path.join(__dirname, 'endpoints', 'v1'))
   );
 
 app.get('/', (req, res) => {
-  res.send('Hello World!');
+  res.send('');
 });
 
 app.listen(process.env.API_PORT, () => {
