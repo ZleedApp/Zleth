@@ -2,24 +2,29 @@ import bcrypt           from 'bcrypt';
 import crypto           from 'crypto';
 import jwt              from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
-import schemas       from '../../models';
+import schemas          from '../../models';
+// @ts-ignore
+import UrlSafeString    from 'url-safe-string';
 
 module.exports = {
   addEndpoint: (app: any, mongoose: any) => {
     const User = mongoose.model('User', schemas.userSchema);
+
+    const stringTrimmer = new UrlSafeString({
+      maxLen:             50,
+      lowercaseOnly:      true,
+      regexRemovePattern: /((?!([a-z0-9])).)/gi,
+      joinString:         '_',
+      trimWhitespace:     true
+    });
 
     app.post('/v1/auth/login', async (req: any, res: any) => {
       const requestBody = req.body;
 
       if(!checkRequestBody(requestBody, 'login')) checkRequestBody(requestBody, 'login');
 
-      const [err, user]  = User.findOne({ email: requestBody.email });
+      const user = await User.findOne({ email: requestBody.email });
 
-      if(err) return res.status(500).json({
-        status: 0,
-        message: 'Internal Server Error!',
-        messageCode: 'INTERNAL_SERVER_ERROR',
-      });
       if(!user) return res.status(404).json({
         status: 0,
         message: 'Invalid Email Address!',
@@ -64,7 +69,7 @@ module.exports = {
 
       const newUser = new User({
         uuid: userUUID,
-        username: requestBody.username,
+        username: stringTrimmer.generate(requestBody.username),
         password: passwordHash,
         email: requestBody.email,
         streamData: {

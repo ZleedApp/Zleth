@@ -2712,7 +2712,7 @@ uri-js@^4.2.2:
 
 url-safe-string@^1.1.0:
   version "1.1.0"
-  resolved "https://registry.npmjs.org/url-safe-string/-/url-safe-string-1.1.0.tgz"
+  resolved "https://registry.yarnpkg.com/url-safe-string/-/url-safe-string-1.1.0.tgz#2ab1852922b56d209553adb204812fc5009042ba"
   integrity sha512-1SytB3qGX+JEMRtZYHrw42/NBos+PLkkEBRANmheVvtGfqarwXwqsO/l7xOUA29UA7kg5L7HINAXGWNVDfYmIA==
 
 util-deprecate@^1.0.1:
