@@ -2,42 +2,53 @@ import bcrypt           from 'bcrypt';
 import crypto           from 'crypto';
 import jwt              from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
+import schemas       from '../../models';
 
 module.exports = {
   addEndpoint: (app: any, mongoose: any) => {
-    const User = mongoose.model('User', {
-      uuid: {
-        type: String,
-        required: true,
-        unique: true
-      },
-      username: {
-        type: String,
-        required: true
-      },
-      password: {
-        type: String,
-        required: true
-      },
-      email: {
-        type: String,
-        required: true,
-        trim: true,
-        index: {
-          unique: true
-        }
-      },
-      streamData: {
-        streamTitle: String,
-        streamDescription: String,
-        streamCategory: String,
-        streamLanguage: String,
-        streamTags: [String],
-        streamThumbnail: String,
-      },
-      streamKey: String,
-      createdAt: Date,
-      lastSignIn: Date,
+    const User = mongoose.model('User', schemas.userSchema);
+
+    app.post('/v1/auth/login', async (req: any, res: any) => {
+      const requestBody = req.body;
+
+      if(!checkRequestBody(requestBody, 'login')) checkRequestBody(requestBody, 'login');
+
+      const [err, user]  = User.findOne({ email: requestBody.email });
+
+      if(err) return res.status(500).json({
+        status: 0,
+        message: 'Internal Server Error!',
+        messageCode: 'INTERNAL_SERVER_ERROR',
+      });
+      if(!user) return res.status(404).json({
+        status: 0,
+        message: 'Invalid Email Address!',
+        messageCode: 'EMAIL_INVALID',
+      });
+
+      const passwordMatch = await bcrypt.compare(requestBody.password, user.password);
+
+      const jwtToken      = jwt.sign({ uuid: user.uuid, username: user.username, email: user.email }, process.env.JWT_SECRET!, { algorithm: 'HS512', expiresIn: '30d' });
+      const expiryDate    = new Date().setDate(new Date().getDate() + 30);
+
+      if(passwordMatch) {
+        res.json({
+          status: 1,
+          message: 'Successfully logged in the user.',
+          messageCode: 'USER_FOUND',
+          data: {
+            jwtToken,
+            jwtExpires: expiryDate,
+          }
+        });
+      } else {
+        res.json({
+          status: 0,
+          message: 'The password is invalid.',
+          messageCode: 'PASSWORD_INVALID',
+          data: null
+        });
+      }
     });
 
     app.post('/v1/auth/register', async (req: any, res: any) => {
@@ -87,13 +98,13 @@ module.exports = {
       .catch((err: any) => {
         if(err.code === 11000) {
           res.status(400).json({
-            status: 'error',
+            status: 0,
             message: 'User already exists!',
             messageCode: 'USER_ALREADY_EXISTS',
           });
         } else {
           res.status(500).json({
-            status: 'error',
+            status: 0,
             message: 'Internal server error!',
             messageCode: 'INTERNAL_SERVER_ERROR',
           });
